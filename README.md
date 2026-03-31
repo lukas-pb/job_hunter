@@ -10,9 +10,7 @@ No server. No install. No Python. Open the page, enter your API key, and go.
 
 ## Live demo
 
-**[→ Open the app](https://yourusername.github.io/job-hunter)**
-
-> Replace the URL above with your own GitHub Pages link once deployed.
+**[→ Open the app](https://lukas-pb.github.io/job-hunter)**
 
 ---
 
