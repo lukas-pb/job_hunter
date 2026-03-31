@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Hunter — Data & AI Market</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161920;
+    --surface2: #1e2130;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --accent: #4f8ef7;
+    --accent2: #7c5cfc;
+    --success: #34d399;
+    --warn: #fbbf24;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+
+  /* Layout */
+  .shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+  .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 24px 0; display: flex; flex-direction: column; gap: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .main { padding: 32px; overflow: hidden; }
+
+  /* Sidebar */
+  .logo { padding: 0 20px 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .logo-title { font-size: 15px; font-weight: 500; letter-spacing: -0.3px; }
+  .logo-sub { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+
+  .sidebar-section { padding: 0 12px; margin-bottom: 20px; }
+  .sidebar-label { font-size: 10px; font-family: var(--mono); color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; }
+  .city-btn { display: block; width: 100%; text-align: left; padding: 7px 10px; border-radius: 6px; border: none; background: transparent; color: var(--muted); font-family: var(--font); font-size: 13px; cursor: pointer; transition: all .15s; }
+  .city-btn:hover { background: var(--surface2); color: var(--text); }
+  .city-btn.active { background: rgba(79,142,247,0.15); color: var(--accent); font-weight: 500; }
+
+  .seg-chip { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; cursor: pointer; transition: all .15s; margin-bottom: 2px; }
+  .seg-chip:hover { background: var(--surface2); }
+  .seg-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border2); flex-shrink: 0; transition: background .15s; }
+  .seg-chip.active .dot { background: var(--accent); }
+  .seg-chip .lbl { font-size: 12px; color: var(--muted); transition: color .15s; }
+  .seg-chip.active .lbl { color: var(--text); }
+
+
+
+  /* Fetch bar */
+  .fetch-bar { display: flex; align-items: flex-end; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; flex-wrap: wrap; }
+  .fetch-bar-fields { display: flex; gap: 12px; flex: 1; flex-wrap: wrap; }
+  .fetch-field { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 130px; }
+  .fetch-field-sm { flex: 0 0 80px; min-width: 70px; }
+  .fetch-label { font-size: 10px; font-family: var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .fetch-key-link { color: var(--accent); font-size: 10px; text-decoration: none; float: right; }
+  .fetch-key-link:hover { text-decoration: underline; }
+  .fetch-input { background: var(--bg); border: 1px solid var(--border2); border-radius: 6px; padding: 7px 10px; color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; width: 100%; }
+  .fetch-input:focus { border-color: var(--accent); }
+  .run-btn { padding: 9px 24px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; transition: opacity .15s, transform .1s; white-space: nowrap; flex-shrink: 0; }
+  .run-btn:hover { opacity: .88; }
+  .run-btn:active { transform: scale(0.98); }
+  .run-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+  .status-bar { margin: 10px 12px 0; font-size: 11px; font-family: var(--mono); color: var(--muted); min-height: 16px; }
+
+  /* Main content */
+  .page-header { margin-bottom: 28px; }
+  .page-title { font-size: 24px; font-weight: 300; letter-spacing: -0.5px; }
+  .page-title span { color: var(--accent); font-weight: 500; }
+  .page-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  /* Empty state */
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; gap: 12px; }
+  .empty-icon { width: 56px; height: 56px; border-radius: 16px; background: var(--surface2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; }
+  .empty-icon svg { width: 24px; height: 24px; stroke: var(--muted); fill: none; stroke-width: 1.5; }
+  .empty-title { font-size: 16px; font-weight: 400; color: var(--text); }
+  .empty-sub { font-size: 13px; color: var(--muted); text-align: center; max-width: 300px; }
+
+  /* Metrics */
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .metric-card .m-lbl { font-size: 11px; font-family: var(--mono); color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .metric-card .m-val { font-size: 26px; font-weight: 300; letter-spacing: -0.5px; }
+  .metric-card .m-val.accent { color: var(--accent); }
+  .metric-card .m-val.success { color: var(--success); }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+  .tab { padding: 10px 18px; font-size: 13px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; background: none; border-top: none; border-left: none; border-right: none; font-family: var(--font); }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .panel { display: none; } .panel.active { display: block; }
+
+  /* Heatmap */
+  .heatmap-container { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  #heatmapCanvas { display: block; }
+
+  /* Jobs table */
+  .filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-bar input, .filter-bar select { background: var(--surface); border: 1px solid var(--border2); border-radius: 7px; padding: 8px 12px; color: var(--text); font-family: var(--font); font-size: 13px; outline: none; transition: border-color .15s; }
+  .filter-bar input { flex: 1; min-width: 200px; }
+  .filter-bar input:focus, .filter-bar select:focus { border-color: var(--accent); }
+  .filter-bar select option { background: var(--surface2); }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { padding: 11px 14px; text-align: left; font-size: 11px; font-family: var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); font-weight: 400; white-space: nowrap; background: var(--surface); }
+  tbody td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 13px; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--surface2); }
+
+  .score-badge { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 22px; border-radius: 5px; font-family: var(--mono); font-size: 12px; font-weight: 500; background: rgba(79,142,247,0.15); color: var(--accent); }
+  .score-badge.high { background: rgba(52,211,153,0.15); color: var(--success); }
+  .skill-pill { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 11px; font-family: var(--mono); background: var(--surface2); color: var(--muted); border: 1px solid var(--border); margin: 1px; }
+  .core-pill { background: rgba(79,142,247,0.1); color: var(--accent); border-color: rgba(79,142,247,0.25); }
+  .seg-tag { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .sal { font-family: var(--mono); font-size: 12px; color: var(--success); white-space: nowrap; }
+  a.jlink { color: var(--accent); text-decoration: none; font-size: 12px; font-family: var(--mono); }
+  a.jlink:hover { text-decoration: underline; }
+
+  .err-box { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); border-radius: 8px; padding: 12px 16px; color: #f87171; font-size: 13px; margin-bottom: 16px; display: none; }
+
+  /* Export */
+  .export-btn { padding: 7px 14px; background: transparent; border: 1px solid var(--border2); border-radius: 7px; color: var(--muted); font-family: var(--font); font-size: 12px; cursor: pointer; transition: all .15s; }
+  .export-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+
+  /* Settings */
+  .settings-group { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; }
+  .settings-group h3 { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+  .settings-group p { font-size: 12px; color: var(--muted); margin-bottom: 14px; line-height: 1.5; }
+  .chip-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; min-height: 28px; }
+  .s-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px 3px 10px; border-radius: 12px; font-size: 12px; font-family: var(--mono); background: var(--surface2); border: 1px solid var(--border2); color: var(--text); }
+  .s-chip.core { background: rgba(79,142,247,0.1); border-color: rgba(79,142,247,0.3); color: var(--accent); }
+  .s-chip.secondary { background: rgba(124,92,252,0.1); border-color: rgba(124,92,252,0.3); color: #a78bfa; }
+  .s-chip button { background: none; border: none; cursor: pointer; color: inherit; opacity: 0.5; font-size: 14px; line-height: 1; padding: 0; display: flex; align-items: center; }
+  .s-chip button:hover { opacity: 1; }
+  .add-row { display: flex; gap: 8px; }
+  .add-row input { flex: 1; background: var(--bg); border: 1px solid var(--border2); border-radius: 6px; padding: 6px 10px; color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; }
+  .add-row input:focus { border-color: var(--accent); }
+  .add-row button { padding: 6px 14px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 6px; color: var(--text); font-family: var(--font); font-size: 12px; cursor: pointer; white-space: nowrap; transition: all .15s; }
+  .add-row button:hover { border-color: var(--accent); color: var(--accent); }
+  .reset-link { font-size: 11px; color: var(--muted); font-family: var(--mono); cursor: pointer; text-decoration: underline; }
+  .reset-link:hover { color: var(--text); }
+
+  @media (max-width: 700px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    .main { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-title">Job Hunter</div>
+      <div class="logo-sub">data &amp; ai · australia</div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">City</div>
+      <div id="cityBtns"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Segments</div>
+      <div id="segChips"></div>
+    </div>
+
+    <div class="status-bar" id="statusBar"></div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="page-header">
+      <div class="page-title">Data &amp; AI <span id="cityLabel">Brisbane</span></div>
+      <div class="page-sub">Live job market analysis via Adzuna</div>
+    </div>
+
+    <div class="fetch-bar">
+      <div class="fetch-bar-fields">
+        <div class="fetch-field">
+          <label class="fetch-label">App ID</label>
+          <input type="text" id="appId" value="" placeholder="your app ID" spellcheck="false" class="fetch-input">
+        </div>
+        <div class="fetch-field">
+          <label class="fetch-label">App Key <a href="https://developer.adzuna.com/signup" target="_blank" class="fetch-key-link">get free key ↗</a></label>
+          <input type="password" id="appKey" value="" placeholder="your app key" spellcheck="false" class="fetch-input">
+        </div>
+        <div class="fetch-field fetch-field-sm">
+          <label class="fetch-label">Pages <span class="fetch-hint">≤50/page</span></label>
+          <input type="number" id="pages" value="2" min="1" max="10" class="fetch-input">
+        </div>
+      </div>
+      <button class="run-btn" id="runBtn" onclick="runSearch()">Fetch jobs</button>
+    </div>
+
+    <div class="err-box" id="errBox"></div>
+
+    <!-- Top-level tabs: always visible -->
+    <div class="tabs" id="mainTabs">
+      <button class="tab active" onclick="switchMainTab('data',this)">Results</button>
+      <button class="tab" onclick="switchMainTab('settings',this)">Settings</button>
+    </div>
+
+    <!-- Data panel -->
+    <div id="mainPanel-data">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </div>
+        <div class="empty-title">No data yet</div>
+        <div class="empty-sub">Configure your settings, select a city, then hit Fetch jobs.</div>
+      </div>
+      <div id="results" style="display:none">
+        <div class="metrics" id="metrics"></div>
+        <div class="tabs" style="margin-top:4px">
+          <button class="tab active" onclick="switchTab('heatmap',this)">Skill demand</button>
+          <button class="tab" onclick="switchTab('jobs',this)">Ranked jobs</button>
+        </div>
+        <div class="panel active" id="panel-heatmap">
+          <div class="heatmap-container">
+            <canvas id="heatmapCanvas"></canvas>
+          </div>
+        </div>
+        <div class="panel" id="panel-jobs">
+          <div class="filter-bar">
+            <input type="text" id="filterText" placeholder="Filter by title, company or skill…" oninput="renderTable()">
+            <select id="filterSeg" onchange="renderTable()"><option value="">All segments</option></select>
+            <select id="sortCol" onchange="renderTable()">
+              <option value="score">Sort by score</option>
+              <option value="salary">Sort by salary</option>
+            </select>
+            <button class="export-btn" onclick="exportCSV()">Export CSV</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Score</th><th>Title</th><th>Company</th>
+                <th>Segment</th><th>Skills</th><th>Salary</th><th>Link</th>
+              </tr></thead>
+              <tbody id="jobsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings panel: always available -->
+    <div id="mainPanel-settings" style="display:none">
+      <div class="settings-group">
+        <h3>Search segments <span class="reset-link" onclick="resetSegments()">reset</span></h3>
+        <p>These are the job titles searched on Adzuna. Remove a segment to drop it from the sidebar entirely, or add a custom one like "analytics engineer".</p>
+        <div class="chip-list" id="segmentChips"></div>
+        <div class="add-row">
+          <input type="text" id="newSegment" placeholder="e.g. analytics engineer" onkeydown="if(event.key==='Enter')addSegment()">
+          <button onclick="addSegment()">Add segment</button>
+        </div>
+      </div>
+      <div class="settings-group">
+        <h3>Tracked skills <span class="reset-link" onclick="resetSkills()">reset to defaults</span></h3>
+        <p>Skills scanned in job descriptions to build the heatmap. Remove ones you don't care about, or add new ones. Changes take effect on next fetch.</p>
+        <div class="chip-list" id="skillChips"></div>
+        <div class="add-row">
+          <input type="text" id="newSkill" placeholder="e.g. rust" onkeydown="if(event.key==='Enter')addSkill()">
+          <button onclick="addSkill()">Add skill</button>
+        </div>
+      </div>
+      <div class="settings-group">
+        <h3>Core skills — +3 pts each <span class="reset-link" onclick="resetCore()">reset</span></h3>
+        <p>Jobs mentioning these score +3 points each. Treat these as your must-haves.</p>
+        <div class="chip-list" id="coreChips"></div>
+        <div class="add-row">
+          <input type="text" id="newCore" placeholder="e.g. python" onkeydown="if(event.key==='Enter')addCore()">
+          <button onclick="addCore()">Add core skill</button>
+        </div>
+      </div>
+      <div class="settings-group">
+        <h3>Secondary skills — +1 pt each <span class="reset-link" onclick="resetSecondary()">reset</span></h3>
+        <p>Jobs mentioning these score +1 point each. Nice-to-haves that bump up the ranking.</p>
+        <div class="chip-list" id="secondaryChips"></div>
+        <div class="add-row">
+          <input type="text" id="newSecondary" placeholder="e.g. kafka" onkeydown="if(event.key==='Enter')addSecondary()">
+          <button onclick="addSecondary()">Add secondary skill</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const CITIES = ['Brisbane','Sydney','Melbourne','Perth','Adelaide','Canberra'];
+const DEFAULT_SEGMENTS = ['business intelligence','data analyst','data scientist','machine learning engineer','data engineer','ai engineer'];
+// Skills/Core/Secondary defined below as activeSkills, activeCore, activeSecondary
+const SEG_COLORS = ['#4f8ef7','#7c5cfc','#34d399','#fbbf24','#f472b6','#60a5fa','#f97316','#22d3ee','#a3e635'];
+
+let activeCity = 'Brisbane';
+let activeSegments = [...DEFAULT_SEGMENTS];
+let activeSegs = new Set(activeSegments);
+let allJobs = [];
+
+// Build sidebar city buttons
+const cityBtnsEl = document.getElementById('cityBtns');
+CITIES.forEach(c => {
+  const b = document.createElement('button');
+  b.className = 'city-btn' + (c === activeCity ? ' active' : '');
+  b.textContent = c;
+  b.onclick = () => {
+    activeCity = c;
+    document.getElementById('cityLabel').textContent = c;
+    cityBtnsEl.querySelectorAll('.city-btn').forEach(x => x.classList.toggle('active', x.textContent === c));
+  };
+  cityBtnsEl.appendChild(b);
+});
+
+function renderSidebarSegments() {
+  const segEl = document.getElementById('segChips');
+  segEl.innerHTML = '';
+  activeSegments.forEach((s, i) => {
+    const color = SEG_COLORS[i % SEG_COLORS.length];
+    const isOn = activeSegs.has(s);
+    const ch = document.createElement('div');
+    ch.className = 'seg-chip' + (isOn ? ' active' : '');
+    ch.innerHTML = `<span class="dot" style="background:${isOn ? color : 'var(--border2)'}"></span><span class="lbl">${s}</span>`;
+    ch.onclick = () => {
+      if (activeSegs.has(s)) { if (activeSegs.size > 1) { activeSegs.delete(s); ch.classList.remove('active'); ch.querySelector('.dot').style.background = 'var(--border2)'; } }
+      else { activeSegs.add(s); ch.classList.add('active'); ch.querySelector('.dot').style.background = color; }
+    };
+    segEl.appendChild(ch);
+  });
+}
+renderSidebarSegments();
+
+function setStatus(msg) { document.getElementById('statusBar').textContent = msg; }
+function showErr(msg) { const e = document.getElementById('errBox'); e.textContent = msg; e.style.display = msg ? 'block' : 'none'; }
+function cleanText(t) { return t.toLowerCase().replace(/[^a-z0-9\s]/g,' '); }
+
+function scoreJob(text) {
+  let score = 0, matches = [], coreHits = [];
+  activeCore.forEach(s => { if (new RegExp('\\b' + s + '\\b').test(text)) { score += 3; coreHits.push(s); matches.push(s); } });
+  activeSecondary.forEach(s => { if (new RegExp('\\b' + s.replace(/\s+/g,'\\s+') + '\\b').test(text)) { score += 1; matches.push(s); } });
+  return { score, matches, coreHits };
+}
+
+async function fetchSegment(seg, city, pages, appId, appKey) {
+  const jobs = []; const seen = new Set();
+  for (let p = 1; p <= pages; p++) {
+    setStatus(`"${seg}" — page ${p}/${pages}`);
+    const params = new URLSearchParams({ app_id: appId, app_key: appKey, results_per_page: 50, what: seg, where: city, 'content-type': 'application/json' });
+    const resp = await fetch(`https://api.adzuna.com/v1/api/jobs/au/search/${p}?${params}`);
+    if (!resp.ok) throw new Error(`Adzuna API returned ${resp.status} — check your App ID and Key`);
+    const data = await resp.json();
+    const results = data.results || [];
+    if (!results.length) break;
+    results.forEach(j => {
+      if (seen.has(j.id)) return; seen.add(j.id);
+      jobs.push({ id: j.id, title: j.title||'', company: (j.company||{}).display_name||'', location: (j.location||{}).display_name||'', description: j.description||'', salary_min: j.salary_min||null, salary_max: j.salary_max||null, url: j.redirect_url||'', segment: seg });
+    });
+    if (jobs.length >= 250) break;
+    await new Promise(r => setTimeout(r, 500));
+  }
+  return jobs;
+}
+
+async function runSearch() {
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true; showErr('');
+  const appId = document.getElementById('appId').value.trim();
+  const appKey = document.getElementById('appKey').value.trim();
+  if (!appId || !appKey) {
+    showErr('Enter your Adzuna App ID and Key — get a free one at developer.adzuna.com');
+    btn.disabled = false; return;
+  }
+  const pages = Math.min(10, Math.max(1, parseInt(document.getElementById('pages').value) || 2));
+  const segs = [...activeSegs];
+  allJobs = [];
+  try {
+    for (const seg of segs) {
+      const jobs = await fetchSegment(seg, activeCity, pages, appId, appKey);
+      allJobs.push(...jobs);
+    }
+    setStatus(`${allJobs.length} jobs across ${segs.length} segments`);
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('results').style.display = 'block';
+    buildMetrics(segs);
+    buildHeatmap(segs);
+    populateSegFilter(segs);
+    renderTable();
+  } catch(e) {
+    showErr(e.message);
+    setStatus('');
+  }
+  btn.disabled = false;
+}
+
+function buildMetrics(segs) {
+  const total = allJobs.length;
+  const python = allJobs.filter(j => cleanText(j.description).includes('python')).length;
+  const qualified = allJobs.map(j => { const r = scoreJob(cleanText(j.description)); return {...j,...r}; }).filter(j => j.score > 0).reduce((map, j) => { const k = j.id||(j.title+'|'+j.company); map.set(k,j); return map; }, new Map()).size;
+  const salaries = allJobs.filter(j => j.salary_min || j.salary_max).map(j => j.salary_max || j.salary_min);
+  const avgSal = salaries.length ? Math.round(salaries.reduce((a,b)=>a+b,0)/salaries.length/1000) : null;
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric-card"><div class="m-lbl">Total jobs</div><div class="m-val accent">${total}</div></div>
+    <div class="metric-card"><div class="m-lbl">Segments</div><div class="m-val">${segs.length}</div></div>
+    <div class="metric-card"><div class="m-lbl">Mention Python</div><div class="m-val">${python}</div></div>
+    <div class="metric-card"><div class="m-lbl">Match stack</div><div class="m-val success">${qualified}</div></div>
+    ${avgSal ? `<div class="metric-card"><div class="m-lbl">Avg salary</div><div class="m-val">$${avgSal}k</div></div>` : ''}
+  `;
+}
+
+function buildHeatmap(segs) {
+  const matrix = {};
+  activeSkills.forEach(sk => { matrix[sk] = {}; segs.forEach(s => { matrix[sk][s] = 0; }); });
+  allJobs.forEach(j => {
+    const text = cleanText(j.description);
+    activeSkills.forEach(sk => {
+      const hits = (text.match(new RegExp('\\b' + sk.replace(/\s+/g,'\\s+') + '\\b','g')) || []).length;
+      if (hits && matrix[sk]) matrix[sk][j.segment] = (matrix[sk][j.segment]||0) + hits;
+    });
+  });
+  const rows = activeSkills.filter(sk => segs.some(s => (matrix[sk][s]||0) > 0));
+  rows.sort((a,b) => segs.reduce((s,seg)=>s+(matrix[b][seg]||0),0) - segs.reduce((s,seg)=>s+(matrix[a][seg]||0),0));
+  const top = rows.slice(0, 30);
+  const maxVal = Math.max(...top.flatMap(sk => segs.map(s => matrix[sk][s]||0)), 1);
+
+  const cellH = 26, cellW = Math.max(90, Math.floor(Math.min(600, window.innerWidth - 320) / segs.length));
+  const leftPad = 130, rightPad = 20, bottomPad = 10;
+
+  // Measure label lengths to compute required topPad
+  const offscreen = document.createElement('canvas').getContext('2d');
+  offscreen.font = '500 11px "DM Sans", sans-serif';
+  const angle = Math.PI / 4;
+  const maxLabelW = Math.max(...segs.map(s => offscreen.measureText(s).width));
+  const topPad = Math.ceil(maxLabelW * Math.sin(angle)) + 16;
+
+  const W = leftPad + cellW * segs.length + rightPad;
+  const H = topPad + cellH * top.length + bottomPad;
+
+  const canvas = document.getElementById('heatmapCanvas');
+  canvas.width = W; canvas.height = H;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#161920'; ctx.fillRect(0, 0, W, H);
+
+  // Column headers — anchor at bottom-centre of each column top, rotate -45deg so text fans up-right
+  ctx.font = '500 11px "DM Sans", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  segs.forEach((seg, ci) => {
+    const x = leftPad + ci * cellW + cellW / 2;
+    const y = topPad - 6;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(-angle);
+    ctx.fillStyle = SEG_COLORS[activeSegments.indexOf(seg)] || '#6b7280';
+    ctx.fillText(seg, 0, 0);
+    ctx.restore();
+  });
+
+  // Rows
+  top.forEach((sk, ri) => {
+    const isCore = activeCore.includes(sk);
+    ctx.fillStyle = isCore ? '#4f8ef7' : '#6b7280';
+    ctx.font = (isCore ? '500' : '400') + ' 12px "DM Mono", monospace';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(sk, leftPad - 8, topPad + ri * cellH + cellH / 2);
+
+    segs.forEach((seg, ci) => {
+      const v = matrix[sk][seg] || 0;
+      const t = v / maxVal;
+      // Magma-ish: dark blue → purple → orange → yellow
+      const r = Math.round(t < 0.5 ? t*2*120+10 : 120 + (t-0.5)*2*135);
+      const g = Math.round(t < 0.5 ? t*2*20 : 20 + (t-0.5)*2*160);
+      const b = Math.round(t < 0.5 ? t*2*80+30 : 80 - (t-0.5)*2*60);
+      ctx.fillStyle = v > 0 ? `rgb(${r},${g},${b})` : 'rgba(255,255,255,0.03)';
+      ctx.beginPath();
+      ctx.roundRect(leftPad + ci * cellW + 2, topPad + ri * cellH + 2, cellW - 4, cellH - 4, 3);
+      ctx.fill();
+      if (v > 0) {
+        ctx.fillStyle = t > 0.45 ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)';
+        ctx.font = '11px "DM Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(v, leftPad + ci * cellW + cellW / 2, topPad + ri * cellH + cellH / 2);
+      }
+    });
+  });
+}
+
+function populateSegFilter(segs) {
+  const sel = document.getElementById('filterSeg');
+  sel.innerHTML = '<option value="">All segments</option>';
+  segs.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sel.appendChild(o); });
+}
+
+function deduplicatedJobs() {
+  // Score all jobs, then deduplicate by ID — keep highest score, merge segment names
+  const scored = allJobs.map(j => { const r = scoreJob(cleanText(j.description)); return {...j,...r}; }).filter(j => j.score > 0);
+  const byId = new Map();
+  scored.forEach(j => {
+    const key = j.id || (j.title + '|' + j.company + '|' + j.url);
+    if (!byId.has(key)) {
+      byId.set(key, {...j, segments: new Set([j.segment])});
+    } else {
+      const existing = byId.get(key);
+      existing.segments.add(j.segment);
+      if (j.score > existing.score) { Object.assign(existing, j); existing.segments = byId.get(key).segments; }
+    }
+  });
+  return [...byId.values()].map(j => ({...j, segment: [...j.segments].join(', ')}));
+}
+
+function renderTable() {
+  const filter = document.getElementById('filterText').value.toLowerCase();
+  const segFilter = document.getElementById('filterSeg').value;
+  const sortBy = document.getElementById('sortCol').value;
+
+  let jobs = deduplicatedJobs();
+  if (filter) jobs = jobs.filter(j => (j.title + j.company + j.matches.join(' ')).toLowerCase().includes(filter));
+  if (segFilter) jobs = jobs.filter(j => j.segments.has(segFilter));
+  jobs.sort((a,b) => sortBy === 'salary' ? ((b.salary_max||b.salary_min||0)-(a.salary_max||a.salary_min||0)) : b.score - a.score);
+
+  const tbody = document.getElementById('jobsBody');
+  if (!jobs.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">No matching jobs</td></tr>'; return; }
+
+  tbody.innerHTML = jobs.slice(0, 150).map(j => {
+    const sal = (j.salary_min || j.salary_max) ? `$${Math.round((j.salary_max||j.salary_min)/1000)}k` : '—';
+    const pills = j.matches.map(m => `<span class="skill-pill${activeCore.includes(m)?' core-pill':''}">${m}</span>`).join('');
+    const link = j.url ? `<a class="jlink" href="${j.url}" target="_blank">view ↗</a>` : '—';
+    const highScore = j.score >= 6;
+    const segTags = [...j.segments].map(s => `<span class="seg-tag" style="display:inline-block;margin:1px">${s}</span>`).join('');
+    return `<tr>
+      <td><span class="score-badge${highScore?' high':''}">${j.score}</span></td>
+      <td style="max-width:200px;font-size:13px;line-height:1.4">${j.title}</td>
+      <td style="font-size:12px;color:var(--muted);white-space:nowrap">${j.company}</td>
+      <td style="max-width:140px">${segTags}</td>
+      <td style="max-width:200px">${pills}</td>
+      <td><span class="sal">${sal}</span></td>
+      <td>${link}</td>
+    </tr>`;
+  }).join('');
+}
+
+function exportCSV() {
+  const jobs = deduplicatedJobs().sort((a,b) => b.score - a.score);
+  const header = ['score','title','company','location','segment','matched_skills','salary_min','salary_max','url'];
+  const rows = jobs.map(j => header.map(h => {
+    const v = h === 'matched_skills' ? j.matches.join('; ') : h === 'segment' ? [...j.segments].join('; ') : (j[h] ?? '');
+    return `"${String(v).replace(/"/g,'""')}"`;
+  }).join(','));
+  const csv = [header.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = `job_hunter_${activeCity.toLowerCase()}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+
+// ── Settings state (mutable copies of the defaults) ──────────────────────────
+const DEFAULT_SKILLS = ['python','r','sql','scala','java','excel','machine learning','deep learning','nlp','computer vision','pandas','numpy','scikit','sklearn','tensorflow','pytorch','keras','spark','hadoop','airflow','dbt','kafka','databricks','snowflake','etl','pipeline','aws','azure','gcp','redshift','bigquery','s3','power bi','tableau','looker','qlik','dashboard','postgres','mysql','git','docker','kubernetes'];
+const DEFAULT_CORE = ['python','sql'];
+const DEFAULT_SECONDARY = ['databricks','spark','aws','azure','gcp','power bi','tableau','etl','pipeline','snowflake','bigquery','airflow','dbt','warehouse'];
+
+let activeSkills = [...DEFAULT_SKILLS];
+let activeCore = [...DEFAULT_CORE];
+let activeSecondary = [...DEFAULT_SECONDARY];
+
+function renderChips(listId, arr, cls, removeFn) {
+  document.getElementById(listId).innerHTML = arr.map((s, i) =>
+    `<span class="s-chip ${cls}">${s}<button onclick="${removeFn}(${i})" title="remove">&#x2715;</button></span>`
+  ).join('');
+}
+function renderAllChips() {
+  renderChips('segmentChips', activeSegments, 'secondary', 'removeSegment');
+  renderChips('skillChips', activeSkills, '', 'removeSkill');
+  renderChips('coreChips', activeCore, 'core', 'removeCore');
+  renderChips('secondaryChips', activeSecondary, 'secondary', 'removeSecondary');
+}
+
+function removeSkill(i) { activeSkills.splice(i,1); renderAllChips(); }
+function removeCore(i) { activeCore.splice(i,1); renderAllChips(); }
+function removeSecondary(i) { activeSecondary.splice(i,1); renderAllChips(); }
+
+function addSkill() {
+  const v = document.getElementById('newSkill').value.trim().toLowerCase();
+  if (v && !activeSkills.includes(v)) { activeSkills.push(v); renderAllChips(); }
+  document.getElementById('newSkill').value = '';
+}
+function addCore() {
+  const v = document.getElementById('newCore').value.trim().toLowerCase();
+  if (v && !activeCore.includes(v)) { activeCore.push(v); renderAllChips(); }
+  document.getElementById('newCore').value = '';
+}
+function addSecondary() {
+  const v = document.getElementById('newSecondary').value.trim().toLowerCase();
+  if (v && !activeSecondary.includes(v)) { activeSecondary.push(v); renderAllChips(); }
+  document.getElementById('newSecondary').value = '';
+}
+
+function resetSegments() {
+  activeSegments = [...DEFAULT_SEGMENTS];
+  activeSegs = new Set(activeSegments);
+  renderSidebarSegments();
+  renderAllChips();
+}
+function removeSegment(i) {
+  const seg = activeSegments[i];
+  activeSegments.splice(i, 1);
+  activeSegs.delete(seg);
+  renderSidebarSegments();
+  renderAllChips();
+}
+function addSegment() {
+  const v = document.getElementById('newSegment').value.trim().toLowerCase();
+  if (v && !activeSegments.includes(v)) {
+    activeSegments.push(v);
+    activeSegs.add(v);
+    renderSidebarSegments();
+    renderAllChips();
+  }
+  document.getElementById('newSegment').value = '';
+}
+
+function resetSkills() { activeSkills = [...DEFAULT_SKILLS]; renderAllChips(); }
+function resetCore() { activeCore = [...DEFAULT_CORE]; renderAllChips(); }
+function resetSecondary() { activeSecondary = [...DEFAULT_SECONDARY]; renderAllChips(); }
+
+// Init chips on load
+renderAllChips();
+
+function switchMainTab(name, el) {
+  document.querySelectorAll('#mainTabs .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('mainPanel-data').style.display = name === 'data' ? 'block' : 'none';
+  document.getElementById('mainPanel-settings').style.display = name === 'settings' ? 'block' : 'none';
+}
+
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+</script>
+</body>
+</html>
