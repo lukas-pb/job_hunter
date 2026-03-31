@@ -10,7 +10,7 @@ No server. No install. No Python. Open the page, enter your API key, and go.
 
 ## Live demo
 
-**[→ Open the app](https://lukas-pb.github.io/job-hunter)**
+**[→ Open the app](https://lukas-pb.github.io/job_hunter)**
 
 ---
 
@@ -79,28 +79,6 @@ All changes take effect on the next fetch. Each section has a reset button to re
 ## Exporting results
 
 Click **Export CSV** in the Ranked Jobs tab to download all matching jobs with their scores, matched skills, salary data, and links. The filename includes the city and date so exports from different sessions don't overwrite each other.
-
----
-
-## Running locally with Python (optional)
-
-If you'd prefer to save results to disk, `job_hunter.py` is a command-line version of the same tool. Outputs go into a `results/<city>/` folder as CSVs and a heatmap PNG.
-
-```bash
-pip install requests pandas matplotlib
-
-# Brisbane, all segments, 2 pages each
-python job_hunter.py
-
-# Different city
-python job_hunter.py --city Sydney
-
-# Single segment, more pages
-python job_hunter.py --city Melbourne --query "data engineer" --pages 5
-
-# Re-run analysis without hitting the API again
-python job_hunter.py --city Brisbane --skip-fetch
-```
 
 ---
 
